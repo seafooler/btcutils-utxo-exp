@@ -246,6 +246,18 @@ func NewBlockFromBytes(serializedBlock []byte) (*Block, error) {
 	return b, nil
 }
 
+// NewBlockNewFromBytes returns a new instance of a bitcoin block given the
+// serialized bytes.  See Block.
+func NewBlockNewFromBytes(serializedBlock []byte) (*Block, error) {
+	br := bytes.NewReader(serializedBlock)
+	b, err := NewBlockNewFromReader(br)
+	if err != nil {
+		return nil, err
+	}
+	b.serializedBlock = serializedBlock
+	return b, nil
+}
+
 // NewBlockFromReader returns a new instance of a bitcoin block given a
 // Reader to deserialize the block.  See Block.
 func NewBlockFromReader(r io.Reader) (*Block, error) {
@@ -259,6 +271,24 @@ func NewBlockFromReader(r io.Reader) (*Block, error) {
 	b := Block{
 		msgBlock:    &msgBlock,
 		blockHeight: BlockHeightUnknown,
+	}
+	return &b, nil
+}
+
+// NewBlockNewFromReader returns a new instance of a bitcoin block given a
+// Reader to deserialize the block.  See Block.
+func NewBlockNewFromReader(r io.Reader) (*Block, error) {
+	// Deserialize the bytes into a MsgBlock.
+	var msgBlockNew wire.MsgBlockNew
+	err := msgBlockNew.Deserialize(r)
+	if err != nil {
+		return nil, err
+	}
+
+	b := Block{
+		msgBlockNew:    &msgBlockNew,
+		blockHeight: 	BlockHeightUnknown,
+		msgBlock:	    msgBlockNew.CreateMsgBlock(),
 	}
 	return &b, nil
 }
