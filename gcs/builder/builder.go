@@ -296,7 +296,7 @@ func WithRandomKey() *GCSBuilder {
 // BuildBasicFilter builds a basic GCS filter from a block. A basic GCS filter
 // will contain all the previous output scripts spent by inputs within a block,
 // as well as the data pushes within all the outputs created within a block.
-func BuildBasicFilter(block *wire.MsgBlock, prevOutScripts [][]byte) (*gcs.Filter, error) {
+func BuildBasicFilter(block *wire.MsgBlockNew, prevOutScripts [][]byte) (*gcs.Filter, error) {
 	blockHash := block.BlockHash()
 	b := WithKeyHash(&blockHash)
 

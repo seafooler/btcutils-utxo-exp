@@ -110,7 +110,7 @@ func NewMerkleBlock(block *btcutil.Block, filter *Filter) (*wire.MsgMerkleBlock,
 
 	// Create and return the merkle block.
 	msgMerkleBlock := wire.MsgMerkleBlock{
-		Header:       block.MsgBlock().Header,
+		Header:       block.MsgBlockNew().Header,
 		Transactions: mBlock.numTx,
 		Hashes:       make([]*chainhash.Hash, 0, len(mBlock.finalHashes)),
 		Flags:        make([]byte, (len(mBlock.bits)+7)/8),

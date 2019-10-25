@@ -270,7 +270,7 @@ func (bf *Filter) maybeAddOutpoint(pkScript []byte, outHash *chainhash.Hash, out
 // update flags set via the loaded filter if needed.
 //
 // This function MUST be called with the filter lock held.
-func (bf *Filter) matchTxAndUpdate(tx *btcutil.Tx) bool {
+func (bf *Filter) matchTxAndUpdate(tx *btcutil.TxNew) bool {
 	// Check if the filter matches the hash of the transaction.
 	// This is useful for finding transactions when they appear in a block.
 	matched := bf.matches(tx.Hash()[:])
@@ -283,7 +283,7 @@ func (bf *Filter) matchTxAndUpdate(tx *btcutil.Tx) bool {
 	// on the network since it avoids the need for another filteradd message
 	// from the client and avoids some potential races that could otherwise
 	// occur.
-	for i, txOut := range tx.MsgTx().TxOut {
+	for i, txOut := range tx.MsgTxNew().TxOut {
 		pushedData, err := txscript.PushedData(txOut.PkScript)
 		if err != nil {
 			continue
@@ -310,7 +310,7 @@ func (bf *Filter) matchTxAndUpdate(tx *btcutil.Tx) bool {
 
 	// Check if the filter matches any outpoints this transaction spends or
 	// any any data elements in the signature scripts of any of the inputs.
-	for _, txin := range tx.MsgTx().TxIn {
+	for _, txin := range tx.MsgTxNew().TxInNew {
 		if bf.matchesOutPoint(&txin.PreviousOutPoint) {
 			return true
 		}
@@ -335,7 +335,7 @@ func (bf *Filter) matchTxAndUpdate(tx *btcutil.Tx) bool {
 // update flags set via the loaded filter if needed.
 //
 // This function is safe for concurrent access.
-func (bf *Filter) MatchTxAndUpdate(tx *btcutil.Tx) bool {
+func (bf *Filter) MatchTxAndUpdate(tx *btcutil.TxNew) bool {
 	bf.mtx.Lock()
 	match := bf.matchTxAndUpdate(tx)
 	bf.mtx.Unlock()
