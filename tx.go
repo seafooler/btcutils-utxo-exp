@@ -48,6 +48,11 @@ func (t *TxNew) MsgTxNew() *wire.MsgTxNew {
 	return t.msgTxNew
 }
 
+func (t *TxNew) MsgTx() *wire.MsgTx {
+	// Return the cached transaction.
+	return t.msgTxNew.CreateMsgTx()
+}
+
 // Hash returns the hash of the transaction.  This is equivalent to
 // calling TxHash on the underlying wire.MsgTx, however it caches the
 // result so subsequent calls are more efficient.
