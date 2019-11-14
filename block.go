@@ -32,21 +32,21 @@ func (e OutOfRangeError) Error() string {
 // transactions on their first access so subsequent accesses don't have to
 // repeat the relatively expensive hashing operations.
 type Block struct {
-	//msgBlock                 *wire.MsgBlock  // Underlying MsgBlock
+	msgBlock                 *wire.MsgBlock  // Underlying MsgBlock
 	serializedBlock          []byte          // Serialized bytes for the block
 	serializedBlockNoWitness []byte          // Serialized bytes for block w/o witness data
 	blockHash                *chainhash.Hash // Cached block hash
 	blockHeight              int32           // Height in the main block chain
-	transactions             []*TxNew           // Transactions
+	transactions             []*Tx           // Transactions
 	txnsGenerated            bool            // ALL wrapped transactions generated
 	msgBlockNew				*wire.MsgBlockNew
 }
 
 // MsgBlock returns the underlying wire.MsgBlock for the Block.
-/*func (b *Block) MsgBlock() *wire.MsgBlock {
+func (b *Block) MsgBlock() *wire.MsgBlock {
 	// Return the cached block.
 	return b.msgBlock
-}*/
+}
 
 func (b *Block) SetMsgBlockNew(msgBlockNew *wire.MsgBlockNew) {
 	b.msgBlockNew = msgBlockNew
@@ -159,7 +159,7 @@ func (b *Block) Hash() *chainhash.Hash {
 	}
 
 	// Cache the block hash and return it.
-	hash := b.msgBlockNew.BlockHash()
+	hash := b.msgBlock.BlockHash()
 	b.blockHash = &hash
 	return &hash
 }
@@ -170,7 +170,7 @@ func (b *Block) Hash() *chainhash.Hash {
 // equivalent to accessing the raw transaction (wire.MsgTx) from the
 // underlying wire.MsgBlock, however the wrapped transaction has some helpful
 // properties such as caching the hash so subsequent calls are more efficient.
-/*func (b *Block) Tx(txNum int) (*Tx, error) {
+func (b *Block) Tx(txNum int) (*Tx, error) {
 	// Ensure the requested transaction is in range.
 	numTx := uint64(len(b.msgBlock.Transactions))
 	if txNum < 0 || uint64(txNum) > numTx {
@@ -194,9 +194,9 @@ func (b *Block) Hash() *chainhash.Hash {
 	newTx.SetIndex(txNum)
 	b.transactions[txNum] = newTx
 	return newTx, nil
-}*/
+}
 
-func (b *Block) TxNew(txNum int) (*TxNew, error) {
+func (b *Block) TxNew(txNum int) (*Tx, error) {
 	// Ensure the requested transaction is in range.
 	numTx := uint64(len(b.msgBlockNew.Transactions))
 	if txNum < 0 || uint64(txNum) > numTx {
@@ -207,7 +207,7 @@ func (b *Block) TxNew(txNum int) (*TxNew, error) {
 
 	// Generate slice to hold all of the wrapped transactions if needed.
 	if len(b.transactions) == 0 {
-		b.transactions = make([]*TxNew, numTx)
+		b.transactions = make([]*Tx, numTx)
 	}
 
 	// Return the wrapped transaction if it has already been generated.
@@ -216,17 +216,17 @@ func (b *Block) TxNew(txNum int) (*TxNew, error) {
 	}
 
 	// Generate and cache the wrapped transaction and return it.
-	newTxNew := NewTxNew(b.msgBlockNew.Transactions[txNum])
-	newTxNew.SetIndex(txNum)
-	b.transactions[txNum] = newTxNew
-	return newTxNew, nil
+	newTx := NewTx(b.msgBlock.Transactions[txNum])
+	newTx.SetIndex(txNum)
+	b.transactions[txNum] = newTx
+	return newTx, nil
 }
 
 // Transactions returns a slice of wrapped transactions (btcutil.Tx) for all
 // transactions in the Block.  This is nearly equivalent to accessing the raw
 // transactions (wire.MsgTx) in the underlying wire.MsgBlock, however it
 // instead provides easy access to wrapped versions (btcutil.Tx) of them.
-/*func (b *Block) Transactions() []*Tx {
+func (b *Block) Transactions() []*Tx {
 	// Return transactions if they have ALL already been generated.  This
 	// flag is necessary because the wrapped transactions are lazily
 	// generated in a sparse fashion.
@@ -251,9 +251,9 @@ func (b *Block) TxNew(txNum int) (*TxNew, error) {
 
 	b.txnsGenerated = true
 	return b.transactions
-}*/
+}
 
-func (b *Block) Transactions() []*TxNew {
+/*func (b *Block) Transactions() []*TxNew {
 	// Return transactions if they have ALL already been generated.  This
 	// flag is necessary because the wrapped transactions are lazily
 	// generated in a sparse fashion.
@@ -279,13 +279,13 @@ func (b *Block) Transactions() []*TxNew {
 	b.txnsGenerated = true
 	return b.transactions
 }
-
+*/
 // TxHash returns the hash for the requested transaction number in the Block.
 // The supplied index is 0 based.  That is to say, the first transaction in the
 // block is txNum 0.  This is equivalent to calling TxHash on the underlying
 // wire.MsgTx, however it caches the result so subsequent calls are more
 // efficient.
-/*func (b *Block) TxHash(txNum int) (*chainhash.Hash, error) {
+func (b *Block) TxHash(txNum int) (*chainhash.Hash, error) {
 	// Attempt to get a wrapped transaction for the specified index.  It
 	// will be created lazily if needed or simply return the cached version
 	// if it has already been generated.
@@ -297,9 +297,9 @@ func (b *Block) Transactions() []*TxNew {
 	// Defer to the wrapped transaction which will return the cached hash if
 	// it has already been generated.
 	return tx.Hash(), nil
-}*/
+}
 
-func (b *Block) TxHash(txNum int) (*chainhash.Hash, error) {
+/*func (b *Block) TxHash(txNum int) (*chainhash.Hash, error) {
 	// Attempt to get a wrapped transaction for the specified index.  It
 	// will be created lazily if needed or simply return the cached version
 	// if it has already been generated.
@@ -311,28 +311,11 @@ func (b *Block) TxHash(txNum int) (*chainhash.Hash, error) {
 	// Defer to the wrapped transaction which will return the cached hash if
 	// it has already been generated.
 	return tx.Hash(), nil
-}
+}*/
 
 // TxLoc returns the offsets and lengths of each transaction in a raw block.
 // It is used to allow fast indexing into transactions within the raw byte
 // stream.
-/*func (b *Block) TxLoc() ([]wire.TxLoc, error) {
-	rawMsg, err := b.Bytes()
-	if err != nil {
-		return nil, err
-	}
-	rbuf := bytes.NewBuffer(rawMsg)
-
-	var mblock wire.MsgBlock
-	txLocs, err := mblock.DeserializeTxLoc(rbuf)
-	if err != nil {
-		return nil, err
-	}
-	return txLocs, err
-}*/
-
-// @seafooler
-// To do ...
 func (b *Block) TxLoc() ([]wire.TxLoc, error) {
 	rawMsg, err := b.Bytes()
 	if err != nil {
@@ -347,6 +330,23 @@ func (b *Block) TxLoc() ([]wire.TxLoc, error) {
 	}
 	return txLocs, err
 }
+
+/*// @seafooler
+// To do ...
+func (b *Block) TxLoc() ([]wire.TxLoc, error) {
+	rawMsg, err := b.Bytes()
+	if err != nil {
+		return nil, err
+	}
+	rbuf := bytes.NewBuffer(rawMsg)
+
+	var mblock wire.MsgBlock
+	txLocs, err := mblock.DeserializeTxLoc(rbuf)
+	if err != nil {
+		return nil, err
+	}
+	return txLocs, err
+}*/
 
 // Height returns the saved height of the block in the block chain.  This value
 // will be BlockHeightUnknown if it hasn't already explicitly been set.
@@ -367,6 +367,13 @@ func (b *Block) SetHeight(height int32) {
 		blockHeight: 	BlockHeightUnknown,
 	}
 }*/
+
+func NewBlockWithMsgBlock(msgBlock *wire.MsgBlock) *Block {
+	return &Block{
+		msgBlock:    msgBlock,
+		blockHeight: 	BlockHeightUnknown,
+	}
+}
 
 // @seafooler
 func NewBlock(msgBlockNew *wire.MsgBlockNew) *Block {
