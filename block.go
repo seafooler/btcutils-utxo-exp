@@ -42,6 +42,10 @@ type Block struct {
 	msgBlockNew				*wire.MsgBlockNew
 }
 
+func (b *Block) SetMsgBlock(msgBlock *wire.MsgBlock) {
+	b.msgBlock = msgBlock
+}
+
 // MsgBlock returns the underlying wire.MsgBlock for the Block.
 func (b *Block) MsgBlock() *wire.MsgBlock {
 	// Return the cached block.
@@ -437,7 +441,7 @@ func NewBlockNewFromReader(r io.Reader) (*Block, error) {
 	b := Block{
 		msgBlockNew:    &msgBlockNew,
 		blockHeight: 	BlockHeightUnknown,
-		//msgBlock:	    msgBlockNew.CreateMsgBlock(),
+		msgBlock:	    msgBlockNew.CreateMsgBlock(),
 	}
 	return &b, nil
 }
@@ -456,6 +460,6 @@ func NewBlockFromBlockNewAndBytes(msgBlockNew *wire.MsgBlockNew, serializedBlock
 	return &Block{
 		msgBlockNew:        msgBlockNew,
 		blockHeight:	    BlockHeightUnknown,
-		//msgBlock:	    msgBlockNew.CreateMsgBlock(),
+		msgBlock:	    msgBlockNew.CreateMsgBlock(),
 	}
 }
